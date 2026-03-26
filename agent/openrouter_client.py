@@ -1,13 +1,8 @@
 import os
 
 import httpx
-from dotenv import load_dotenv
 
-from config import REQUEST_TIMEOUT
-
-load_dotenv()
-
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+from config import OPENROUTER_API_URL, REQUEST_TIMEOUT
 
 
 class OpenRouterClient:

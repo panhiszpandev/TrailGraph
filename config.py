@@ -1,0 +1,10 @@
+EXPLORATION_THRESHOLD = 60
+ANSWER_THRESHOLD = 95
+MAX_HOPS = 5
+MAX_TOOL_ITERATIONS = 10
+KNOWLEDGE_DIR = "knowledge"
+CONTENT_SECTION_MARKER = "## Content"
+REQUEST_TIMEOUT = 30
+DEFAULT_MODEL = "openai/gpt-4o-mini"
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+SYSTEM_PROMPT_PATH = "prompts/system.md"

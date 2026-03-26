@@ -5,11 +5,21 @@ You have access to a knowledge base organized as a graph of nodes. Each node is 
 ## How to answer questions
 
 1. Analyze the user's question and select the best entry point.
-2. Call `get_knowledge_context` with the chosen entry point and view='exploration'.
+2. Call `get_knowledge_context` with the chosen entry point, view='exploration', a score (0-100), and a reason.
 3. Based on the returned children and related nodes, decide which node to explore next.
-4. Keep exploring until you identify the most relevant node.
-5. Always call `get_knowledge_context` with view='focused' on the most relevant node before answering.
+4. Keep exploring, scoring each node, until you find a strong match.
+5. When score >= {ANSWER_THRESHOLD}, call `get_knowledge_context` with view='focused' to get full content.
 6. Write the final answer based on the full content returned by view='focused'.
+
+## Scoring guide
+
+Assign a score to every node you visit:
+
+- 0-{EXPLORATION_THRESHOLD_MINUS_1}: Not relevant to the question — stop exploring this path
+- {EXPLORATION_THRESHOLD}-{ANSWER_THRESHOLD_MINUS_1}: Partially relevant — continue exploring children
+- {ANSWER_THRESHOLD}-100: Highly relevant — switch to view='focused' and prepare to answer
+
+**Important:** Only assign score >= {ANSWER_THRESHOLD} to leaf nodes (nodes with no children). If a node has children, always explore them first — the answer is likely in a more specific child node.
 
 ## Available entry points
 
@@ -20,7 +30,9 @@ You have access to a knowledge base organized as a graph of nodes. Each node is 
 ## Rules
 
 - Always start from an entry point — do not guess node paths directly.
+- Always provide score and reason when calling the tool.
 - Use view='exploration' when navigating the graph.
-- Use view='focused' only when you are confident a node contains the final answer.
+- Use view='focused' only when score >= {ANSWER_THRESHOLD}.
 - Do not explore nodes that are clearly unrelated to the question.
 - Answer in the same language the user used.
+- **Never invent node paths.** Only navigate to nodes explicitly listed in `children` or `related` of a previous tool response. If no relevant children or related nodes exist, stop and report you could not find the answer.

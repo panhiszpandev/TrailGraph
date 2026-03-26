@@ -1,8 +1,10 @@
 # Case Handling
 
 summary: Customer support case management, assignment rules, escalation and resolution workflows.
+parent: service/Service.md
 children: [service/Escalation_process.md]
 related: []
+key_points: ["Cases created manually or via email-to-case and web-to-case", "Assignment based on queues and assignment rules", "Resolution requires status update and customer notification"]
 
 ## Content
 

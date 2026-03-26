@@ -1,8 +1,10 @@
 # Escalation Process
 
 summary: Rules and triggers for escalating unresolved cases to higher support tiers.
+parent: service/Service.md
 children: []
 related: [service/Case_handling.md]
+key_points: ["Automatic escalation when SLA response time is breached", "Escalation rules trigger reassignment to senior agents or managers", "Manual escalation possible by agent", "Escalated cases must be resolved within a shorter SLA window"]
 
 ## Content
 

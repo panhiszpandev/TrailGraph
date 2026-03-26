@@ -1,8 +1,10 @@
 # CRM
 
 summary: Customer relationship management, sales and service processes in Salesforce.
+parent:
 children: [sales/Sales.md, service/Service.md]
 related: []
+key_points: ["Covers sales and service domains", "Sales includes leads and opportunities", "Service includes cases and escalations"]
 
 ## Content
 

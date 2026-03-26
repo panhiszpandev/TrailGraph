@@ -1,8 +1,10 @@
 # Lead Qualification
 
 summary: Detailed internal rules, stages, criteria and responsibilities for lead qualification.
+parent: sales/Sales.md
 children: []
 related: [sales/Opportunity_management.md]
+key_points: ["Mandatory data must be complete before qualification starts", "Duplicate check is required before conversion", "Business fit and ownership must be confirmed", "Outcomes: convert, reject, or request more information", "Sales Operations owns data completeness, rep confirms business fit"]
 
 ## Content
 

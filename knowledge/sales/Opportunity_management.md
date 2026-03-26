@@ -1,8 +1,10 @@
 # Opportunity Management
 
 summary: Process followed after lead qualification and conversion, covering opportunity stages and closing.
+parent: sales/Sales.md
 children: []
 related: [sales/Lead_qualification.md]
+key_points: ["Created after lead conversion", "Stages: Prospecting, Qualification, Proposal, Negotiation, Closed Won/Lost", "Each stage has defined entry criteria and required fields", "Sales rep owns the opportunity"]
 
 ## Content
 

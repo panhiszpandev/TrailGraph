@@ -2,33 +2,26 @@ import json
 import os
 
 from agent.openrouter_client import OpenRouterClient
-from config import ANSWER_THRESHOLD, EXPLORATION_THRESHOLD, MAX_TOOL_ITERATIONS
+from config import DEFAULT_MODEL, MAX_TOOL_ITERATIONS, SYSTEM_PROMPT_PATH
 from tools.knowledge_tool import GetKnowledgeContext
-
-DEFAULT_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
 
 
 class Agent:
-    def __init__(self, tools=None, verbose=False):
+    def __init__(self, tools=None, prompt_vars=None, verbose=False):
         self.verbose = verbose
-        self.client = OpenRouterClient(model=DEFAULT_MODEL)
+        self.client = OpenRouterClient(model=os.getenv("OPENROUTER_MODEL", DEFAULT_MODEL))
         self.tools = tools if tools is not None else [GetKnowledgeContext()]
         self.tool_schemas = [tool.to_schema() for tool in self.tools]
         self.tool_map = {tool.name: tool for tool in self.tools}
         self.messages = []
-        self._load_system_prompt()
+        self._load_system_prompt(prompt_vars or {})
 
-    def _load_system_prompt(self):
-        prompt_path = os.path.join("prompts", "system.md")
-        if os.path.exists(prompt_path):
-            with open(prompt_path) as f:
+    def _load_system_prompt(self, prompt_vars):
+        if os.path.exists(SYSTEM_PROMPT_PATH):
+            with open(SYSTEM_PROMPT_PATH) as f:
                 system_prompt = f.read().strip()
-            system_prompt = system_prompt.format(
-                EXPLORATION_THRESHOLD=EXPLORATION_THRESHOLD,
-                EXPLORATION_THRESHOLD_MINUS_1=EXPLORATION_THRESHOLD - 1,
-                ANSWER_THRESHOLD=ANSWER_THRESHOLD,
-                ANSWER_THRESHOLD_MINUS_1=ANSWER_THRESHOLD - 1,
-            )
+            if prompt_vars:
+                system_prompt = system_prompt.format(**prompt_vars)
             self.messages.append({"role": "system", "content": system_prompt})
 
     def run(self, task=None):

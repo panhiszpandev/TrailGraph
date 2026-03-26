@@ -3,6 +3,8 @@ import os
 import httpx
 from dotenv import load_dotenv
 
+from config import REQUEST_TIMEOUT
+
 load_dotenv()
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -27,7 +29,7 @@ class OpenRouterClient:
         if tools:
             payload["tools"] = tools
 
-        response = httpx.post(OPENROUTER_API_URL, json=payload, headers=headers)
+        response = httpx.post(OPENROUTER_API_URL, json=payload, headers=headers, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
 
         return response.json()["choices"][0]["message"]

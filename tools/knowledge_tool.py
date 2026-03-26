@@ -105,14 +105,43 @@ class GetKnowledgeContext(BaseTool):
     name = "get_knowledge_context"
     description = (
         "Retrieves the content and local graph view of a knowledge base node. "
-        "Use view='exploration' to see children and related nodes. "
-        "Use view='focused' to get the full content of the node."
+        "Always provide a score (0-100) reflecting how relevant this node is to the user question, and a reason. "
+        "Use view='exploration' to navigate the graph. "
+        "Use view='focused' to get full content when score >= 85."
     )
 
-    def run(self, node, view="exploration"):
+    def __init__(self):
+        self.visited = []
+        self.hop_count = 0
+
+    def reset(self):
+        self.visited = []
+        self.hop_count = 0
+
+    def run(self, node, view="exploration", score=0, reason=""):
+        if node in self.visited:
+            return {
+                "already_visited": True,
+                "node": node,
+                "suggestion": "This node was already visited. Consider exploring other candidates.",
+                "metadata": {
+                    "hop_count": self.hop_count,
+                    "visited": self.visited,
+                },
+            }
+
+        self.visited.append(node)
+        self.hop_count += 1
+
         result = build_node_info(node, view)
         if result is None:
             return {"error": f"Node '{node}' not found in knowledge base."}
+
+        result["metadata"] = {
+            "hop_count": self.hop_count,
+            "visited": self.visited,
+        }
+
         return result
 
     def parameters(self):
@@ -126,8 +155,16 @@ class GetKnowledgeContext(BaseTool):
                 "view": {
                     "type": "string",
                     "enum": ["exploration", "focused"],
-                    "description": "Use 'exploration' to see children and related nodes. Use 'focused' to get full content.",
+                    "description": "Use 'exploration' to navigate. Use 'focused' when score >= 85 to get full content.",
+                },
+                "score": {
+                    "type": "integer",
+                    "description": "Relevance score 0-100 for this node relative to the user question. 0-49: low, 50-79: medium, 80-100: high.",
+                },
+                "reason": {
+                    "type": "string",
+                    "description": "Brief explanation of why this score was assigned.",
                 },
             },
-            "required": ["node"],
+            "required": ["node", "score", "reason"],
         }

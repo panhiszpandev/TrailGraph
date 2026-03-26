@@ -15,7 +15,7 @@ class OpenRouterClient:
         if not self.api_key:
             raise ValueError("OPENROUTER_API_KEY is not set in environment variables")
 
-    def complete(self, messages):
+    def complete(self, messages, tools=None):
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -24,8 +24,10 @@ class OpenRouterClient:
             "model": self.model,
             "messages": messages,
         }
+        if tools:
+            payload["tools"] = tools
 
         response = httpx.post(OPENROUTER_API_URL, json=payload, headers=headers)
         response.raise_for_status()
 
-        return response.json()["choices"][0]["message"]["content"]
+        return response.json()["choices"][0]["message"]

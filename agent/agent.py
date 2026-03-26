@@ -1,14 +1,20 @@
+import json
 import os
 
 from agent.openrouter_client import OpenRouterClient
+from tools.knowledge_tool import GetKnowledgeContext
 
-DEFAULT_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o")
+DEFAULT_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+MAX_TOOL_ITERATIONS = 10
 
 
 class Agent:
     def __init__(self, verbose=False):
         self.verbose = verbose
         self.client = OpenRouterClient(model=DEFAULT_MODEL)
+        self.tools = [GetKnowledgeContext()]
+        self.tool_schemas = [tool.to_schema() for tool in self.tools]
+        self.tool_map = {tool.name: tool for tool in self.tools}
         self.messages = []
         self._load_system_prompt()
 
@@ -38,10 +44,36 @@ class Agent:
     def _step(self, user_input):
         self.messages.append({"role": "user", "content": user_input})
 
-        if self.verbose:
-            print(f"[verbose] Sending {len(self.messages)} messages to model")
+        for iteration in range(MAX_TOOL_ITERATIONS):
+            if self.verbose:
+                print(f"[verbose] Iteration {iteration + 1}, messages: {len(self.messages)}")
 
-        response = self.client.complete(self.messages)
-        self.messages.append({"role": "assistant", "content": response})
+            message = self.client.complete(self.messages, tools=self.tool_schemas)
+            self.messages.append(message)
 
-        print(f"Agent: {response}")
+            tool_calls = message.get("tool_calls")
+
+            if not tool_calls:
+                print(f"Agent: {message.get('content', '')}")
+                return
+
+            for tool_call in tool_calls:
+                tool_name = tool_call["function"]["name"]
+                tool_args = json.loads(tool_call["function"]["arguments"])
+
+                if self.verbose:
+                    print(f"[verbose] Calling tool: {tool_name} with {tool_args}")
+
+                tool = self.tool_map.get(tool_name)
+                if tool:
+                    result = tool.run(**tool_args)
+                else:
+                    result = {"error": f"Tool '{tool_name}' not found."}
+
+                self.messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call["id"],
+                    "content": json.dumps(result),
+                })
+
+        print("[agent] Reached maximum tool iterations without a final answer.")

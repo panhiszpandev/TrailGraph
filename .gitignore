@@ -25,3 +25,6 @@ Thumbs.db
 
 # Private Claude context
 CLAUDE_PRIV.md
+
+# Local documentation
+docs/

@@ -1,5 +1,6 @@
 import os
 
+from config import ANSWER_THRESHOLD, EXPLORATION_THRESHOLD
 from tools.base_tool import BaseTool
 
 KNOWLEDGE_DIR = "knowledge"
@@ -107,7 +108,7 @@ class GetKnowledgeContext(BaseTool):
         "Retrieves the content and local graph view of a knowledge base node. "
         "Always provide a score (0-100) reflecting how relevant this node is to the user question, and a reason. "
         "Use view='exploration' to navigate the graph. "
-        "Use view='focused' to get full content when score >= 85."
+        f"Use view='focused' to get full content when score >= {ANSWER_THRESHOLD}."
     )
 
     def __init__(self):
@@ -155,11 +156,11 @@ class GetKnowledgeContext(BaseTool):
                 "view": {
                     "type": "string",
                     "enum": ["exploration", "focused"],
-                    "description": "Use 'exploration' to navigate. Use 'focused' when score >= 85 to get full content.",
+                    "description": f"Use 'exploration' to navigate. Use 'focused' when score >= {ANSWER_THRESHOLD} to get full content.",
                 },
                 "score": {
                     "type": "integer",
-                    "description": "Relevance score 0-100 for this node relative to the user question. 0-49: low, 50-79: medium, 80-100: high.",
+                    "description": f"Relevance score 0-100 for this node relative to the user question. 0-{EXPLORATION_THRESHOLD - 1}: low, {EXPLORATION_THRESHOLD}-{ANSWER_THRESHOLD - 1}: medium, {ANSWER_THRESHOLD}-100: high.",
                 },
                 "reason": {
                     "type": "string",

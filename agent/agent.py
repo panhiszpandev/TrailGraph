@@ -2,13 +2,10 @@ import json
 import os
 
 from agent.openrouter_client import OpenRouterClient
+from config import ANSWER_THRESHOLD, EXPLORATION_THRESHOLD, MAX_HOPS, MAX_TOOL_ITERATIONS
 from tools.knowledge_tool import GetKnowledgeContext
 
 DEFAULT_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
-MAX_TOOL_ITERATIONS = 10
-EXPLORATION_THRESHOLD = 60
-ANSWER_THRESHOLD = 85
-MAX_HOPS = 5
 
 
 class Agent:
@@ -26,6 +23,12 @@ class Agent:
         if os.path.exists(prompt_path):
             with open(prompt_path) as f:
                 system_prompt = f.read().strip()
+            system_prompt = system_prompt.format(
+                EXPLORATION_THRESHOLD=EXPLORATION_THRESHOLD,
+                EXPLORATION_THRESHOLD_MINUS_1=EXPLORATION_THRESHOLD - 1,
+                ANSWER_THRESHOLD=ANSWER_THRESHOLD,
+                ANSWER_THRESHOLD_MINUS_1=ANSWER_THRESHOLD - 1,
+            )
             self.messages.append({"role": "system", "content": system_prompt})
 
     def run(self, task=None):

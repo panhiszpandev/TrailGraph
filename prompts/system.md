@@ -7,8 +7,9 @@ You have access to a knowledge base organized as a graph of nodes. Each node is 
 1. Analyze the user's question and select the best entry point.
 2. Call `get_knowledge_context` with the chosen entry point and view='exploration'.
 3. Based on the returned children and related nodes, decide which node to explore next.
-4. Keep exploring until you have enough context to answer the question.
-5. When you have enough context, stop calling tools and write the final answer.
+4. Keep exploring until you identify the most relevant node.
+5. Always call `get_knowledge_context` with view='focused' on the most relevant node before answering.
+6. Write the final answer based on the full content returned by view='focused'.
 
 ## Available entry points
 

@@ -6,6 +6,9 @@ from tools.knowledge_tool import GetKnowledgeContext
 
 DEFAULT_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
 MAX_TOOL_ITERATIONS = 10
+EXPLORATION_THRESHOLD = 60
+ANSWER_THRESHOLD = 85
+MAX_HOPS = 5
 
 
 class Agent:
@@ -42,7 +45,13 @@ class Agent:
             self._step(user_input)
 
     def _step(self, user_input):
+        for tool in self.tools:
+            tool.reset()
+
         self.messages.append({"role": "user", "content": user_input})
+
+        best_node = None
+        best_score = 0
 
         for iteration in range(MAX_TOOL_ITERATIONS):
             if self.verbose:
@@ -60,15 +69,23 @@ class Agent:
             for tool_call in tool_calls:
                 tool_name = tool_call["function"]["name"]
                 tool_args = json.loads(tool_call["function"]["arguments"])
+                score = tool_args.get("score", 0)
+                node = tool_args.get("node", "")
 
                 if self.verbose:
-                    print(f"[verbose] Calling tool: {tool_name} with {tool_args}")
+                    print(f"[verbose] Calling tool: {tool_name} | node: {node} | score: {score}")
+
+                if score > best_score:
+                    best_score = score
+                    best_node = node
 
                 tool = self.tool_map.get(tool_name)
                 if tool:
+                    hop_count = tool.hop_count
                     result = tool.run(**tool_args)
                 else:
                     result = {"error": f"Tool '{tool_name}' not found."}
+                    hop_count = 0
 
                 self.messages.append({
                     "role": "tool",
@@ -76,4 +93,20 @@ class Agent:
                     "content": json.dumps(result),
                 })
 
-        print("[agent] Reached maximum tool iterations without a final answer.")
+                if score < EXPLORATION_THRESHOLD and hop_count > 0:
+                    self._fallback(best_node, best_score)
+                    return
+
+                if hop_count >= MAX_HOPS:
+                    self._fallback(best_node, best_score)
+                    return
+
+        self._fallback(best_node, best_score)
+
+    def _fallback(self, best_node, best_score):
+        node_name = os.path.basename(best_node) if best_node else "unknown"
+        print(
+            f"\n[agent] Could not find a confident match. "
+            f"The closest I found was: {node_name} ({best_score}/100).\n"
+            f"Was that what you meant, or could you clarify your question?"
+        )

@@ -19,6 +19,8 @@ Assign a score to every node you visit:
 - {EXPLORATION_THRESHOLD}-{ANSWER_THRESHOLD_MINUS_1}: Partially relevant — continue exploring children
 - {ANSWER_THRESHOLD}-100: Highly relevant — switch to view='focused' and prepare to answer
 
+**Important:** Only assign score >= {ANSWER_THRESHOLD} to leaf nodes (nodes with no children). If a node has children, always explore them first — the answer is likely in a more specific child node.
+
 ## Available entry points
 
 - `entry_points/CRM.md` — Customer relationship management, sales and service processes
@@ -33,3 +35,4 @@ Assign a score to every node you visit:
 - Use view='focused' only when score >= {ANSWER_THRESHOLD}.
 - Do not explore nodes that are clearly unrelated to the question.
 - Answer in the same language the user used.
+- **Never invent node paths.** Only navigate to nodes explicitly listed in `children` or `related` of a previous tool response. If no relevant children or related nodes exist, stop and report you could not find the answer.

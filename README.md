@@ -116,6 +116,18 @@ Add `.md` files to the appropriate `knowledge/` subdirectory following the node 
 
 ## Planned improvements
 
+### Near-term fixes
 - **Fix `pending_hint` scope** — introduce a `has_pending` flag set only when `should_fallback()` triggers, so hints are only injected after an actual fallback.
 - **Multi-path exploration** — explore top N candidate nodes in parallel (beam search), not just the single highest-scoring one.
 - **Parser field names as constants** — field names in `graph/parser.py` (`summary:`, `parent:`, `children:`, etc.) are hardcoded strings; move to `config.py`.
+- **Scoring module** — extract scoring logic and thresholds from `GetKnowledgeContext` into a dedicated `scoring.py` module, making scoring strategies easier to swap or extend.
+
+### Longer-term
+
+- **Document parser** — a tool that converts external documents (PDF, DOCX, Confluence pages, etc.) into the `.md` node format used by the knowledge graph, making it easier to populate and extend the knowledge base.
+
+- **SQLite metadata store** — each knowledge node gets a corresponding record in a SQLite database holding only its metadata (`summary`, `parent`, `children`, `related`, `key_points`). Full content stays in the `.md` files and is loaded only when `view=focused`. Graph traversal and candidate selection happen against the database, making navigation faster without loading file contents on every hop.
+
+- **RAG-based entry point selection** — replace the current fixed list of entry points with a RAG step. When a question arrives, RAG performs a semantic search across the knowledge graph and returns the top N most relevant nodes (default: 3) as candidate entry points. The existing graph traversal algorithm then runs from each candidate. If no confident match is found (score below threshold), the agent automatically falls back to the next RAG candidate (i+1) and retries — eliminating the need to hardcode entry points.
+
+- **Multi-query decomposition** — if a user question can be split into N logical sub-questions, each sub-question is treated independently and goes through the full graph traversal algorithm on its own. The individual answers are then consolidated into a single response, evaluated for relevance against the original question.

@@ -1,6 +1,7 @@
 import argparse
 
 from agent.agent import Agent
+from config import ANSWER_THRESHOLD, EXPLORATION_THRESHOLD
 
 
 def parse_args():
@@ -12,7 +13,13 @@ def parse_args():
 
 def main():
     args = parse_args()
-    agent = Agent(verbose=args.verbose)
+    prompt_vars = {
+        "EXPLORATION_THRESHOLD": EXPLORATION_THRESHOLD,
+        "EXPLORATION_THRESHOLD_MINUS_1": EXPLORATION_THRESHOLD - 1,
+        "ANSWER_THRESHOLD": ANSWER_THRESHOLD,
+        "ANSWER_THRESHOLD_MINUS_1": ANSWER_THRESHOLD - 1,
+    }
+    agent = Agent(prompt_vars=prompt_vars, verbose=args.verbose)
     agent.run(task=args.task)
 
 

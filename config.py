@@ -4,3 +4,5 @@ MAX_HOPS = 5
 MAX_TOOL_ITERATIONS = 10
 KNOWLEDGE_DIR = "knowledge"
 REQUEST_TIMEOUT = 30
+DEFAULT_MODEL = "openai/gpt-4o-mini"
+SYSTEM_PROMPT_PATH = "prompts/system.md"

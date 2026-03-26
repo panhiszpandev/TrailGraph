@@ -1,7 +1,7 @@
 # CRM
 
 summary: Customer relationship management, sales and service processes in Salesforce.
-children: [sales/Sales.md, service/Case_handling.md]
+children: [sales/Sales.md, service/Service.md]
 related: []
 
 ## Content

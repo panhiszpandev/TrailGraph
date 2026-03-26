@@ -109,3 +109,13 @@ class MyTool(BaseTool):
 ## Adding knowledge
 
 Add `.md` files to the appropriate `knowledge/` subdirectory following the node format above. Update `parent`, `children`, and `related` fields to connect the node to the graph.
+
+## Known issues
+
+- **`pending_hint` leaks between steps** — after a successful answer, `pending_hint()` still returns the last visited node as a suggestion. It should only trigger after a fallback, not after every step. This causes the next unrelated question to receive a misleading hint.
+
+## Planned improvements
+
+- **Fix `pending_hint` scope** — introduce a `has_pending` flag set only when `should_fallback()` triggers, so hints are only injected after an actual fallback.
+- **Multi-path exploration** — explore top N candidate nodes in parallel (beam search), not just the single highest-scoring one.
+- **Parser field names as constants** — field names in `graph/parser.py` (`summary:`, `parent:`, `children:`, etc.) are hardcoded strings; move to `config.py`.

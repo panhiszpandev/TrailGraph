@@ -1,9 +1,7 @@
 import os
 
-from config import ANSWER_THRESHOLD, EXPLORATION_THRESHOLD
+from config import ANSWER_THRESHOLD, EXPLORATION_THRESHOLD, KNOWLEDGE_DIR, MAX_HOPS
 from tools.base_tool import BaseTool
-
-KNOWLEDGE_DIR = "knowledge"
 
 
 def parse_node_file(filepath):
@@ -114,12 +112,32 @@ class GetKnowledgeContext(BaseTool):
     def __init__(self):
         self.visited = []
         self.hop_count = 0
+        self.best_node = None
+        self.best_score = 0
+        self.last_score = 0
+        self.last_error = False
+        self.dead_end = False
 
     def reset(self):
         self.visited = []
         self.hop_count = 0
+        self.best_node = None
+        self.best_score = 0
+        self.last_score = 0
+        self.last_error = False
+        self.dead_end = False
+        self.disabled = False
 
     def run(self, node, view="exploration", score=0, reason=""):
+        self.last_score = score
+        self.last_error = False
+        if score > self.best_score:
+            self.best_score = score
+            self.best_node = node
+
+        if score >= ANSWER_THRESHOLD:
+            view = "focused"
+
         if node in self.visited:
             return {
                 "already_visited": True,
@@ -134,8 +152,12 @@ class GetKnowledgeContext(BaseTool):
         self.visited.append(node)
         self.hop_count += 1
 
+        if view == "focused":
+            self.disabled = True
+
         result = build_node_info(node, view)
         if result is None:
+            self.last_error = True
             return {"error": f"Node '{node}' not found in knowledge base."}
 
         result["metadata"] = {
@@ -143,7 +165,34 @@ class GetKnowledgeContext(BaseTool):
             "visited": self.visited,
         }
 
+        if view == "exploration" and not result.get("children") and not result.get("related"):
+            self.dead_end = True
+
         return result
+
+    def should_fallback(self):
+        if self.hop_count == 0:
+            return None
+        if self.dead_end or self.last_error or self.last_score < EXPLORATION_THRESHOLD or self.hop_count >= MAX_HOPS:
+            node_name = os.path.basename(self.best_node) if self.best_node else "unknown"
+            return (
+                f"\n[agent] Could not find a confident match. "
+                f"The closest I found was: {node_name} ({self.best_score}/100).\n"
+                f"Was that what you meant, or could you clarify your question?"
+            )
+        return None
+
+    def pending_hint(self):
+        if self.best_node:
+            return (
+                f"[hint: if the user is confirming the previous suggestion, "
+                f"retrieve the focused content of '{self.best_node}' and answer. "
+                f"Otherwise treat it as a new question.]"
+            )
+        return None
+
+    def verbose_info(self, tool_args):
+        return f"| node: {tool_args.get('node', '')} | score: {tool_args.get('score', '')}"
 
     def parameters(self):
         return {

@@ -171,7 +171,7 @@ class GetKnowledgeContext(BaseTool):
         return result
 
     def should_fallback(self):
-        if self.hop_count == 0:
+        if self.hop_count == 0 or self.disabled:
             return None
         if self.dead_end or self.last_error or self.last_score < EXPLORATION_THRESHOLD or self.hop_count >= MAX_HOPS:
             node_name = os.path.basename(self.best_node) if self.best_node else "unknown"

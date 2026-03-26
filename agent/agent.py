@@ -2,17 +2,17 @@ import json
 import os
 
 from agent.openrouter_client import OpenRouterClient
-from config import ANSWER_THRESHOLD, EXPLORATION_THRESHOLD, MAX_HOPS, MAX_TOOL_ITERATIONS
+from config import ANSWER_THRESHOLD, EXPLORATION_THRESHOLD, MAX_TOOL_ITERATIONS
 from tools.knowledge_tool import GetKnowledgeContext
 
 DEFAULT_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
 
 
 class Agent:
-    def __init__(self, verbose=False):
+    def __init__(self, tools=None, verbose=False):
         self.verbose = verbose
         self.client = OpenRouterClient(model=DEFAULT_MODEL)
-        self.tools = [GetKnowledgeContext()]
+        self.tools = tools if tools is not None else [GetKnowledgeContext()]
         self.tool_schemas = [tool.to_schema() for tool in self.tools]
         self.tool_map = {tool.name: tool for tool in self.tools}
         self.messages = []
@@ -48,19 +48,20 @@ class Agent:
             self._step(user_input)
 
     def _step(self, user_input):
+        hints = [h for tool in self.tools for h in [tool.pending_hint()] if h]
+        content = user_input + "\n\n" + "\n".join(hints) if hints else user_input
+
         for tool in self.tools:
             tool.reset()
 
-        self.messages.append({"role": "user", "content": user_input})
-
-        best_node = None
-        best_score = 0
+        self.messages.append({"role": "user", "content": content})
 
         for iteration in range(MAX_TOOL_ITERATIONS):
             if self.verbose:
                 print(f"[verbose] Iteration {iteration + 1}, messages: {len(self.messages)}")
 
-            message = self.client.complete(self.messages, tools=self.tool_schemas)
+            active_tools = [s for tool, s in zip(self.tools, self.tool_schemas) if not tool.disabled]
+            message = self.client.complete(self.messages, tools=active_tools or None)
             self.messages.append(message)
 
             tool_calls = message.get("tool_calls")
@@ -72,23 +73,16 @@ class Agent:
             for tool_call in tool_calls:
                 tool_name = tool_call["function"]["name"]
                 tool_args = json.loads(tool_call["function"]["arguments"])
-                score = tool_args.get("score", 0)
-                node = tool_args.get("node", "")
 
                 if self.verbose:
-                    print(f"[verbose] Calling tool: {tool_name} | node: {node} | score: {score}")
-
-                if score > best_score:
-                    best_score = score
-                    best_node = node
+                    info = tool.verbose_info(tool_args) if tool else ""
+                    print(f"[verbose] Calling tool: {tool_name} {info}")
 
                 tool = self.tool_map.get(tool_name)
                 if tool:
-                    hop_count = tool.hop_count
                     result = tool.run(**tool_args)
                 else:
                     result = {"error": f"Tool '{tool_name}' not found."}
-                    hop_count = 0
 
                 self.messages.append({
                     "role": "tool",
@@ -96,20 +90,14 @@ class Agent:
                     "content": json.dumps(result),
                 })
 
-                if score < EXPLORATION_THRESHOLD and hop_count > 0:
-                    self._fallback(best_node, best_score)
-                    return
+                if tool:
+                    fallback = tool.should_fallback()
+                    if fallback:
+                        print(fallback)
+                        return
 
-                if hop_count >= MAX_HOPS:
-                    self._fallback(best_node, best_score)
-                    return
-
-        self._fallback(best_node, best_score)
-
-    def _fallback(self, best_node, best_score):
-        node_name = os.path.basename(best_node) if best_node else "unknown"
-        print(
-            f"\n[agent] Could not find a confident match. "
-            f"The closest I found was: {node_name} ({best_score}/100).\n"
-            f"Was that what you meant, or could you clarify your question?"
-        )
+        for tool in self.tools:
+            fallback = tool.should_fallback()
+            if fallback:
+                print(fallback)
+                return

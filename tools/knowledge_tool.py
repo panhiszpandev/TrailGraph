@@ -138,7 +138,7 @@ class GetKnowledgeContext(BaseTool):
         if score >= ANSWER_THRESHOLD:
             view = "focused"
 
-        if node in self.visited:
+        if node in self.visited and view != "focused":
             return {
                 "already_visited": True,
                 "node": node,

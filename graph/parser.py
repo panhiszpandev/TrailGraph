@@ -1,6 +1,6 @@
 import os
 
-from config import KNOWLEDGE_DIR
+from config import CONTENT_SECTION_MARKER, KNOWLEDGE_DIR
 
 
 def parse_node_file(filepath):
@@ -28,7 +28,7 @@ def parse_node_file(filepath):
             elif line.startswith("key_points:"):
                 raw = line.replace("key_points:", "").strip().strip("[]")
                 key_points = [x.strip().strip('"') for x in raw.split(",") if x.strip()]
-            elif line == "## Content":
+            elif line == CONTENT_SECTION_MARKER:
                 in_content = True
             elif in_content:
                 content_lines.append(line)

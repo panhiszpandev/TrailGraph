@@ -3,14 +3,13 @@ import os
 
 from agent.openrouter_client import OpenRouterClient
 from config import DEFAULT_MODEL, MAX_TOOL_ITERATIONS, SYSTEM_PROMPT_PATH
-from tools.knowledge_tool import GetKnowledgeContext
 
 
 class Agent:
-    def __init__(self, tools=None, prompt_vars=None, verbose=False):
+    def __init__(self, tools, prompt_vars=None, verbose=False):
         self.verbose = verbose
         self.client = OpenRouterClient(model=os.getenv("OPENROUTER_MODEL", DEFAULT_MODEL))
-        self.tools = tools if tools is not None else [GetKnowledgeContext()]
+        self.tools = tools
         self.tool_schemas = [tool.to_schema() for tool in self.tools]
         self.tool_map = {tool.name: tool for tool in self.tools}
         self.messages = []
@@ -67,11 +66,11 @@ class Agent:
                 tool_name = tool_call["function"]["name"]
                 tool_args = json.loads(tool_call["function"]["arguments"])
 
+                tool = self.tool_map.get(tool_name)
+
                 if self.verbose:
                     info = tool.verbose_info(tool_args) if tool else ""
                     print(f"[verbose] Calling tool: {tool_name} {info}")
-
-                tool = self.tool_map.get(tool_name)
                 if tool:
                     result = tool.run(**tool_args)
                 else:
